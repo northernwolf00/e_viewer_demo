@@ -1,6 +1,6 @@
 import 'package:flutter_epub_viewer/flutter_epub_viewer.dart';
 import 'package:example/chapter_drawer.dart';
-import 'package:example/search_page.dart';
+import 'package:example/theme_settings_sheet.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -16,21 +16,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
@@ -57,49 +42,114 @@ class _MyHomePageState extends State<MyHomePage> {
 
   double progress = 0.0;
 
+  EpubTheme currentTheme = EpubTheme.sepia();
+  int currentFontSize = 18;
+
+  void _showThemeSettings() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ThemeSettingsSheet(
+        currentTheme: currentTheme,
+        currentFontSize: currentFontSize,
+        onThemeChanged: (theme) {
+          setState(() {
+            currentTheme = theme;
+          });
+          // Theme will be applied on next page load
+        },
+        onFontSizeChanged: (size) {
+          setState(() {
+            currentFontSize = size;
+          });
+          // Font size will be applied on next page load
+        },
+      ),
+    );
+  }
+
+  void _showMenu() {
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(1000, 80, 0, 0),
+      items: [
+        const PopupMenuItem(
+          value: 'description',
+          child: Row(
+            children: [
+              Icon(Icons.description_outlined),
+              SizedBox(width: 12),
+              Text('Kitap beýany'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'bookmark',
+          child: Row(
+            children: [
+              Icon(Icons.bookmark_outline),
+              SizedBox(width: 12),
+              Text('Tekja goş'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'library',
+          child: Row(
+            children: [
+              Icon(Icons.add_circle_outline),
+              SizedBox(width: 12),
+              Text('Kitaplaryma goş'),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      // Handle menu selection
+      if (value != null) {
+        // TODO: Implement menu actions
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: ChapterDrawer(
-        controller: epubController,
-      ),
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          '1. Недостижимый идеал',
+          style: const TextStyle(color: Colors.grey, fontSize: 14),
+        ),
+        centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () async {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        SearchPage(epubController: epubController),
-                  ));
-            },
+            icon: const Icon(Icons.more_vert, color: Colors.black),
+            onPressed: _showMenu,
           ),
         ],
       ),
-      body: SafeArea(
-          child: Column(
+      body: Column(
         children: [
-          LinearProgressIndicator(
-            value: progress,
-            backgroundColor: Colors.transparent,
-          ),
           Expanded(
             child: Stack(
               children: [
                 EpubViewer(
                   initialCfi: 'epubcfi(/6/20!/4/2[introduction]/2[c1_h]/1:0)',
-                  epubSource: EpubSource.fromUrl(
-                      'https://github.com/IDPF/epub3-samples/releases/download/20230704/accessible_epub_3.epub'),
+                  epubSource: EpubSource.fromAsset('assets/4.epub'),
                   epubController: epubController,
                   displaySettings: EpubDisplaySettings(
                       flow: EpubFlow.paginated,
                       useSnapAnimationAndroid: false,
                       snap: true,
-                      theme: EpubTheme.light(),
+                      theme: currentTheme,
+                      fontSize: currentFontSize,
                       allowScriptedContent: true),
                   selectionContextMenu: ContextMenu(
                     menuItems: [
@@ -166,8 +216,53 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ),
           ),
+          // Bottom navigation bar
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Chapters button
+                IconButton(
+                  icon: const Icon(Icons.menu, size: 28),
+                  onPressed: () => ChapterDrawer.show(context, epubController),
+                ),
+                // Page indicator
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${(progress * 213).round()} / 213',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                // Theme settings button
+                IconButton(
+                  icon: const Icon(Icons.text_fields, size: 28),
+                  onPressed: _showThemeSettings,
+                ),
+              ],
+            ),
+          ),
         ],
-      )),
+      ),
     );
   }
 }

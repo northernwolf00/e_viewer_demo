@@ -200,16 +200,7 @@ Contributions are welcome! We appreciate your help in making this package better
 
 Please ensure your code follows the existing style and includes relevant tests.
 
-## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## ❤️ Acknowledgments
-
-*   [Epub.js](https://github.com/futurepress/epub.js) for the core EPUB rendering engine.
-*   [flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview) for the powerful WebView integration.
-
-## 👥 Contributors
 
 Big thanks to all the contributors who have helped build this project!
 
