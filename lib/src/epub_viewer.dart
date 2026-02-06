@@ -19,13 +19,12 @@ import 'utils.dart';
 /// * [cfiRange] - The EPUB CFI (Canonical Fragment Identifier) range for the selection
 /// * [selectionRect] - The bounding rectangle of the selected text (WebView-relative)
 /// * [viewRect] - The bounding rectangle of the entire WebView
-typedef EpubSelectionCallback =
-    void Function(
-      String selectedText,
-      String cfiRange,
-      Rect selectionRect,
-      Rect viewRect,
-    );
+typedef EpubSelectionCallback = void Function(
+  String selectedText,
+  String cfiRange,
+  Rect selectionRect,
+  Rect viewRect,
+);
 
 class EpubViewer extends StatefulWidget {
   const EpubViewer({
@@ -54,6 +53,53 @@ class EpubViewer extends StatefulWidget {
     this.selectAnnotationRange = false,
   });
 
+  ///Callback for handling annotation click (Highlight and Underline)
+  ///Provides the CFI range and the selection rect (same format as onSelection)
+  final void Function(String cfiRange, Map<String, dynamic>? rect)? onAnnotationClicked;
+
+  /// Callback fired when the user touches down on the EPUB viewer.
+  ///
+  /// Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
+  /// Coordinates use the same calculation logic as selection coordinates.
+  ///
+  /// Fires regardless of whether there's an active text selection, allowing you to:
+  /// * Determine which zone of the EPUB viewer was tapped
+  /// * Compare tap location with selection location to trigger selection-specific pop-ups
+  /// * Control navigation and menus based on tap position
+  ///
+  /// Parameters:
+  /// * [x] - Normalized X coordinate (0.0 = left edge, 1.0 = right edge)
+  /// * [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
+  final void Function(double x, double y)? onTouchDown;
+
+  /// Callback fired when the user releases a touch on the EPUB viewer.
+  ///
+  /// Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
+  /// Coordinates use the same calculation logic as selection coordinates.
+  ///
+  /// Fires regardless of whether there's an active text selection, allowing you to:
+  /// * Determine which zone of the EPUB viewer was tapped
+  /// * Compare tap location with selection location to trigger selection-specific pop-ups
+  /// * Control navigation and menus based on tap position
+  ///
+  /// Parameters:
+  /// * [x] - Normalized X coordinate (0.0 = left edge, 1.0 = right edge)
+  /// * [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
+  final void Function(double x, double y)? onTouchUp;
+
+  /// Whether to automatically clear text selection when navigating to a new page.
+  ///
+  /// When true (default), text selection will be cleared when the user navigates
+  /// to a different page using next(), previous(), or toCfi(). This is the standard
+  /// behavior in most e-reader applications.
+  ///
+  /// Set to false if you want to preserve selection across page changes, though
+  /// note that the selection may not be visible on the new page.
+  final bool clearSelectionOnPageChange;
+
+  ///initial display settings
+  final EpubDisplaySettings? displaySettings;
+
   //Epub controller to manage epub
   final EpubController epubController;
 
@@ -69,44 +115,30 @@ class EpubViewer extends StatefulWidget {
   ///if null and initialCfi is also null, the first chapter will be loaded
   final String? initialXPath;
 
-  ///Call back when epub is loaded and displayed
-  final VoidCallback? onEpubLoaded;
-
-  /// Callback when the location are generated for epub, progress will be only available after this
-  final VoidCallback? onLocationLoaded;
-
   ///Call back when chapters are loaded
   final ValueChanged<List<EpubChapter>>? onChaptersLoaded;
 
-  ///Call back when epub page changes
-  final ValueChanged<EpubLocation>? onRelocated;
+  /// Callback when text selection is cleared.
+  ///
+  /// Fired when the user taps elsewhere or explicitly clears the selection.
+  /// Use this to hide any custom selection UI.
+  final VoidCallback? onDeselection;
+
+  ///Call back when epub is loaded and displayed
+  final VoidCallback? onEpubLoaded;
+
+  ///Callback when initial position loading completes
+  final VoidCallback? onInitialPositionLoaded;
 
   ///Callback when initial position loading starts (for showing progress indicator)
   ///Receives the type: 'xpath' or 'cfi'
   final ValueChanged<String>? onInitialPositionLoading;
 
-  ///Callback when initial position loading completes
-  final VoidCallback? onInitialPositionLoaded;
+  /// Callback when the location are generated for epub, progress will be only available after this
+  final VoidCallback? onLocationLoaded;
 
-  ///Call back when text selection changes
-  final ValueChanged<EpubTextSelection>? onTextSelected;
-
-  ///initial display settings
-  final EpubDisplaySettings? displaySettings;
-
-  ///Callback for handling annotation click (Highlight and Underline)
-  ///Provides the CFI range and the selection rect (same format as onSelection)
-  final void Function(String cfiRange, Map<String, dynamic>? rect)?
-  onAnnotationClicked;
-
-  /// Context menu for text selection.
-  /// If null, the default context menu will be used.
-  final ContextMenu? selectionContextMenu;
-
-  /// Whether to suppress the native context menu entirely.
-  /// When true, no native context menu will be shown on text selection.
-  /// Use with [onSelection] to implement custom selection UI.
-  final bool suppressNativeContextMenu;
+  ///Call back when epub page changes
+  final ValueChanged<EpubLocation>? onRelocated;
 
   /// Callback when text is selected with WebView-relative coordinates.
   ///
@@ -140,21 +172,8 @@ class EpubViewer extends StatefulWidget {
   /// * [onSelection] - Called when selection is finalized
   final VoidCallback? onSelectionChanging;
 
-  /// Callback when text selection is cleared.
-  ///
-  /// Fired when the user taps elsewhere or explicitly clears the selection.
-  /// Use this to hide any custom selection UI.
-  final VoidCallback? onDeselection;
-
-  /// Whether to automatically clear text selection when navigating to a new page.
-  ///
-  /// When true (default), text selection will be cleared when the user navigates
-  /// to a different page using next(), previous(), or toCfi(). This is the standard
-  /// behavior in most e-reader applications.
-  ///
-  /// Set to false if you want to preserve selection across page changes, though
-  /// note that the selection may not be visible on the new page.
-  final bool clearSelectionOnPageChange;
+  ///Call back when text selection changes
+  final ValueChanged<EpubTextSelection>? onTextSelected;
 
   /// Whether to programmatically select annotation ranges when clicked.
   ///
@@ -166,48 +185,20 @@ class EpubViewer extends StatefulWidget {
   /// without programmatically selecting the text.
   final bool selectAnnotationRange;
 
-  /// Callback fired when the user touches down on the EPUB viewer.
-  ///
-  /// Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
-  /// Coordinates use the same calculation logic as selection coordinates.
-  ///
-  /// Fires regardless of whether there's an active text selection, allowing you to:
-  /// * Determine which zone of the EPUB viewer was tapped
-  /// * Compare tap location with selection location to trigger selection-specific pop-ups
-  /// * Control navigation and menus based on tap position
-  ///
-  /// Parameters:
-  /// * [x] - Normalized X coordinate (0.0 = left edge, 1.0 = right edge)
-  /// * [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
-  final void Function(double x, double y)? onTouchDown;
+  /// Context menu for text selection.
+  /// If null, the default context menu will be used.
+  final ContextMenu? selectionContextMenu;
 
-  /// Callback fired when the user releases a touch on the EPUB viewer.
-  ///
-  /// Provides normalized coordinates (0.0-1.0) relative to the WebView dimensions.
-  /// Coordinates use the same calculation logic as selection coordinates.
-  ///
-  /// Fires regardless of whether there's an active text selection, allowing you to:
-  /// * Determine which zone of the EPUB viewer was tapped
-  /// * Compare tap location with selection location to trigger selection-specific pop-ups
-  /// * Control navigation and menus based on tap position
-  ///
-  /// Parameters:
-  /// * [x] - Normalized X coordinate (0.0 = left edge, 1.0 = right edge)
-  /// * [y] - Normalized Y coordinate (0.0 = top edge, 1.0 = bottom edge)
-  final void Function(double x, double y)? onTouchUp;
+  /// Whether to suppress the native context menu entirely.
+  /// When true, no native context menu will be shown on text selection.
+  /// Use with [onSelection] to implement custom selection UI.
+  final bool suppressNativeContextMenu;
 
   @override
   State<EpubViewer> createState() => _EpubViewerState();
 }
 
 class _EpubViewerState extends State<EpubViewer> {
-  final GlobalKey webViewKey = GlobalKey();
-
-  Timer?
-  _selectionCheckTimer; // Timer to periodically verify selection still exists
-
-  InAppWebViewController? webViewController;
-
   InAppWebViewSettings settings = InAppWebViewSettings(
     isInspectable: kDebugMode,
     javaScriptEnabled: true,
@@ -222,75 +213,20 @@ class _EpubViewerState extends State<EpubViewer> {
     selectionGranularity: SelectionGranularity.CHARACTER,
   );
 
+  InAppWebViewController? webViewController;
+  final GlobalKey webViewKey = GlobalKey();
+
+  Timer? _selectionCheckTimer; // Timer to periodically verify selection still exists
+
+  @override
+  void dispose() {
+    _stopSelectionMonitoring();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
-  }
-
-  /// Block or unblock gestures using CSS touch-action when selection is active
-  void _blockGesturesWhenSelected(bool block) {
-    if (!mounted || webViewController == null) return;
-
-    // Use CSS touch-action to block horizontal panning/swiping when selection exists
-    // This works at the browser level, before JavaScript event handlers
-    // We apply it to the parent document and iframe elements (not sandboxed contents)
-    webViewController?.evaluateJavascript(
-      source: 'blockGesturesWhenSelected(${block ? 'true' : 'false'})',
-    );
-  }
-
-  void _handleSelection({
-    required Map<String, dynamic>? rect,
-    required String selectedText,
-    required String cfi,
-  }) {
-    if (!mounted) return;
-
-    try {
-      final renderBox = context.findRenderObject() as RenderBox;
-      final webViewSize = renderBox.size;
-
-      if (rect == null) {
-        // Still call onTextSelected for basic selection functionality
-        widget.onTextSelected?.call(
-          EpubTextSelection(selectedText: selectedText, selectionCfi: cfi),
-        );
-        return;
-      }
-
-      // Convert relative coordinates (0-1) to actual WebView coordinates
-      final left = (rect['left'] as num).toDouble();
-      final top = (rect['top'] as num).toDouble();
-      final width = (rect['width'] as num).toDouble();
-      final height = (rect['height'] as num).toDouble();
-
-      final scaledRect = Rect.fromLTWH(
-        left * webViewSize.width,
-        top * webViewSize.height,
-        width * webViewSize.width,
-        height * webViewSize.height,
-      );
-
-      // Create viewRect in WebView-relative coordinates
-      final viewRect = Rect.fromLTWH(
-        0,
-        0,
-        webViewSize.width,
-        webViewSize.height,
-      );
-
-      // Provide WebView-relative coordinates (not screen coordinates)
-      widget.onSelection?.call(
-        selectedText,
-        cfi,
-        scaledRect, // WebView-relative coordinates
-        viewRect,
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint("Error in _handleSelection: $e");
-      }
-    }
   }
 
   void addJavaScriptHandlers() {
@@ -578,19 +514,13 @@ class _EpubViewerState extends State<EpubViewer> {
     bool allowScripted = displaySettings.allowScriptedContent;
     String cfi = widget.initialCfi ?? "";
     String? initialXPath = widget.initialXPath;
-    String direction =
-        widget.displaySettings?.defaultDirection.name ??
-        EpubDefaultDirection.ltr.name;
+    String direction = widget.displaySettings?.defaultDirection.name ?? EpubDefaultDirection.ltr.name;
     int fontSize = displaySettings.fontSize;
 
-    bool useCustomSwipe =
-        Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
+    bool useCustomSwipe = Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
 
-    String? foregroundColor = widget.displaySettings?.theme?.foregroundColor
-        ?.toHex();
-    String customCss = widget.displaySettings?.theme?.customCss != null
-        ? Utils.encodeMap(widget.displaySettings!.theme!.customCss!)
-        : "null";
+    String? foregroundColor = widget.displaySettings?.theme?.foregroundColor?.toHex();
+    String customCss = widget.displaySettings?.theme?.customCss != null ? Utils.encodeMap(widget.displaySettings!.theme!.customCss!) : "null";
 
     bool clearSelectionOnPageChange = widget.clearSelectionOnPageChange;
 
@@ -600,6 +530,101 @@ class _EpubViewerState extends State<EpubViewer> {
       source:
           'loadBook([${data.join(',')}], "$cfi", $xpathParam, "$manager", "$flow", "$spread", $snap, $allowScripted, "$direction", $useCustomSwipe, "${null}", "$foregroundColor", "$fontSize", $clearSelectionOnPageChange, ${widget.selectAnnotationRange}, $customCss)',
     );
+  }
+
+  /// Block or unblock gestures using CSS touch-action when selection is active
+  void _blockGesturesWhenSelected(bool block) {
+    if (!mounted || webViewController == null) return;
+
+    // Use CSS touch-action to block horizontal panning/swiping when selection exists
+    // This works at the browser level, before JavaScript event handlers
+    // We apply it to the parent document and iframe elements (not sandboxed contents)
+    webViewController?.evaluateJavascript(
+      source: 'blockGesturesWhenSelected(${block ? 'true' : 'false'})',
+    );
+  }
+
+  void _handleSelection({
+    required Map<String, dynamic>? rect,
+    required String selectedText,
+    required String cfi,
+  }) {
+    if (!mounted) return;
+
+    try {
+      final renderBox = context.findRenderObject() as RenderBox;
+      final webViewSize = renderBox.size;
+
+      if (rect == null) {
+        // Still call onTextSelected for basic selection functionality
+        widget.onTextSelected?.call(
+          EpubTextSelection(selectedText: selectedText, selectionCfi: cfi),
+        );
+        return;
+      }
+
+      // Convert relative coordinates (0-1) to actual WebView coordinates
+      final left = (rect['left'] as num).toDouble();
+      final top = (rect['top'] as num).toDouble();
+      final width = (rect['width'] as num).toDouble();
+      final height = (rect['height'] as num).toDouble();
+
+      final scaledRect = Rect.fromLTWH(
+        left * webViewSize.width,
+        top * webViewSize.height,
+        width * webViewSize.width,
+        height * webViewSize.height,
+      );
+
+      // Create viewRect in WebView-relative coordinates
+      final viewRect = Rect.fromLTWH(
+        0,
+        0,
+        webViewSize.width,
+        webViewSize.height,
+      );
+
+      // Provide WebView-relative coordinates (not screen coordinates)
+      widget.onSelection?.call(
+        selectedText,
+        cfi,
+        scaledRect, // WebView-relative coordinates
+        viewRect,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Error in _handleSelection: $e");
+      }
+    }
+  }
+
+  /// Start monitoring selection state to ensure blocking persists
+  void _startSelectionMonitoring() {
+    _stopSelectionMonitoring(); // Stop any existing timer
+
+    _selectionCheckTimer = Timer.periodic(const Duration(milliseconds: 200), (
+      timer,
+    ) {
+      if (!mounted || webViewController == null) {
+        timer.cancel();
+        return;
+      }
+
+      // Check if selection still exists and re-apply blocking if needed
+      webViewController?.evaluateJavascript(source: 'checkSelectionAndReapplyBlocking()').then((result) {
+        // If selection no longer exists, stop monitoring
+        if (result == 'no-selection') {
+          _stopSelectionMonitoring();
+          _blockGesturesWhenSelected(false);
+        }
+      });
+    });
+  }
+
+  /// Stop monitoring selection state
+  void _stopSelectionMonitoring() {
+    _selectionCheckTimer?.cancel();
+    _selectionCheckTimer = null;
   }
 
   @override
@@ -616,10 +641,8 @@ class _EpubViewerState extends State<EpubViewer> {
               )
             : widget.selectionContextMenu,
         key: webViewKey,
-        initialFile:
-            'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
-        initialSettings: settings
-          ..disableVerticalScroll = widget.displaySettings?.snap ?? false,
+        initialFile: 'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
+        initialSettings: settings..disableVerticalScroll = widget.displaySettings?.snap ?? false,
         onWebViewCreated: (controller) async {
           webViewController = controller;
           widget.epubController.setWebViewController(controller);
@@ -682,42 +705,5 @@ class _EpubViewerState extends State<EpubViewer> {
         },
       ),
     );
-  }
-
-  /// Start monitoring selection state to ensure blocking persists
-  void _startSelectionMonitoring() {
-    _stopSelectionMonitoring(); // Stop any existing timer
-
-    _selectionCheckTimer = Timer.periodic(const Duration(milliseconds: 200), (
-      timer,
-    ) {
-      if (!mounted || webViewController == null) {
-        timer.cancel();
-        return;
-      }
-
-      // Check if selection still exists and re-apply blocking if needed
-      webViewController
-          ?.evaluateJavascript(source: 'checkSelectionAndReapplyBlocking()')
-          .then((result) {
-            // If selection no longer exists, stop monitoring
-            if (result == 'no-selection') {
-              _stopSelectionMonitoring();
-              _blockGesturesWhenSelected(false);
-            }
-          });
-    });
-  }
-
-  /// Stop monitoring selection state
-  void _stopSelectionMonitoring() {
-    _selectionCheckTimer?.cancel();
-    _selectionCheckTimer = null;
-  }
-
-  @override
-  void dispose() {
-    _stopSelectionMonitoring();
-    super.dispose();
   }
 }
