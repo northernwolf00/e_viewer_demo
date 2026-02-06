@@ -4,7 +4,7 @@ version: 1.2.8
 homepage: https://github.com/fayis672/epub_viewer
 
 environment:
-  sdk: ">=3.8.0 <4.0.0"
+  sdk: ">=3.6.0 <4.0.0"
   flutter: ">=1.17.0"
 
 dependencies:
@@ -12,7 +12,7 @@ dependencies:
     sdk: flutter
   flutter_inappwebview: ^6.1.5
   http: ^1.3.0
-  json_annotation: ^4.10.0
+  json_annotation: ^4.9.0
 
 platforms:
   android:
@@ -43,48 +43,6 @@ flutter:
     - family: SFPro
       fonts:
         - asset: lib/assets/fonts/SF-Pro.ttf
-    - family: Alegreya
-      fonts:
-        - asset: lib/assets/fonts/Alegreya.ttf
-    - family: Amazon Ember
-      fonts:
-        - asset: lib/assets/fonts/Amazon-Ember-Regular.ttf
-    - family: Atkinson Hyperlegible
-      fonts:
-        - asset: lib/assets/fonts/AtkinsonHyperlegible-Regular.ttf
-    - family: Bitter Pro
-      fonts:
-        - asset: lib/assets/fonts/BitterPro-Regular.ttf
-    - family: Bookerly
-      fonts:
-        - asset: lib/assets/fonts/Bookerly.ttf
-    - family: Droid Sans
-      fonts:
-        - asset: lib/assets/fonts/DroidSans.ttf
-    - family: EB Garamond
-      fonts:
-        - asset: lib/assets/fonts/EBGaramond-Var.ttf
-    - family: Gentium Book Plus
-      fonts:
-        - asset: lib/assets/fonts/GentiumBookPlus-Regular.ttf
-    - family: Halant
-      fonts:
-        - asset: lib/assets/fonts/Halant-Regular.ttf
-    - family: IBM Plex Sans
-      fonts:
-        - asset: lib/assets/fonts/IBMPlexSans-Regular.ttf
-    - family: LinLibertine
-      fonts:
-        - asset: lib/assets/fonts/LinLibertine-Regular.ttf
-    - family: Literata
-      fonts:
-        - asset: lib/assets/fonts/Literata-Var.ttf
-    - family: Lora
-      fonts:
-        - asset: lib/assets/fonts/Lora-Var.ttf
-    - family: Ubuntu
-      fonts:
-        - asset: lib/assets/fonts/Ubuntu-Var.ttf
     - family: Gilroy
       fonts:
         - asset: lib/assets/fonts/Gilroy-Medium.ttf

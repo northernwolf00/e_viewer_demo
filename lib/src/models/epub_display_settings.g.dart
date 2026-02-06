@@ -44,7 +44,7 @@ Map<String, dynamic> _$EpubDisplaySettingsToJson(
   'manager': _$EpubManagerEnumMap[instance.manager]!,
   'snap': instance.snap,
   'useSnapAnimationAndroid': instance.useSnapAnimationAndroid,
-  'theme': ?instance.theme?.toJson(),
+  'theme': instance.theme?.toJson(),
 };
 
 const _$EpubSpreadEnumMap = {

@@ -1,14 +1,12 @@
 name: example
 description: "A new Flutter project."
-publish_to: "none" 
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
   sdk: ">=3.3.1 <4.0.0"
 
 dependencies:
-  
-  
   flutter:
     sdk: flutter
   flutter_epub_viewer:
@@ -28,7 +26,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/fonts/
     - assets/images/
@@ -38,55 +36,11 @@ flutter:
     #book fonts
     - family: NewYork
       fonts:
-        - asset: assets/fonts/NewYork.ttf 
+        - asset: assets/fonts/NewYork.ttf
     - family: Gilroy
       fonts:
-        - asset: assets/fonts/Gilroy-Medium.ttf    
+        - asset: assets/fonts/Gilroy-Medium.ttf
 
     - family: SFPro
       fonts:
         - asset: assets/fonts/SF-Pro.ttf
-    - family: Alegreya
-      fonts:
-        - asset: assets/fonts/Alegreya.ttf
-    - family: Amazon Ember
-      fonts:
-        - asset: assets/fonts/Amazon-Ember-Regular.ttf
-    - family: Atkinson Hyperlegible
-      fonts:
-        - asset: assets/fonts/AtkinsonHyperlegible-Regular.ttf
-    - family: Bitter Pro
-      fonts:
-        - asset: assets/fonts/BitterPro-Regular.ttf
-    - family: Bookerly
-      fonts:
-        - asset: assets/fonts/Bookerly.ttf
-    - family: Droid Sans
-      fonts:
-        - asset: assets/fonts/DroidSans.ttf
-    - family: EB Garamond
-      fonts:
-        - asset: assets/fonts/EBGaramond-Var.ttf
-    - family: Gentium Book Plus
-      fonts:
-        - asset: assets/fonts/GentiumBookPlus-Regular.ttf
-    - family: Halant
-      fonts:
-        - asset: assets/fonts/Halant-Regular.ttf
-    - family: IBM Plex Sans
-      fonts:
-        - asset: assets/fonts/IBMPlexSans-Regular.ttf
-    - family: LinLibertine
-      fonts:
-        - asset: assets/fonts/LinLibertine-Regular.ttf
-    - family: Literata
-      fonts:
-        - asset: assets/fonts/Literata-Var.ttf
-    - family: Lora
-      fonts:
-        - asset: assets/fonts/Lora-Var.ttf
-    - family: Ubuntu
-      fonts:
-        - asset: assets/fonts/Ubuntu-Var.ttf
-
- 
