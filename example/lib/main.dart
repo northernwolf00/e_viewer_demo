@@ -266,7 +266,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _showMenu() {
     showMenu(
       context: context,
-      position: RelativeRect.fromLTRB(1000, 80, 0, 0),
+      position: const RelativeRect.fromLTRB(1000, 80, 0, 0),
       items: [
         const PopupMenuItem(
           value: 'description',
@@ -503,7 +503,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: Container(
-                          padding: EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(color: currentTheme.buttonBackgroundColor, shape: BoxShape.circle),
                           child: Image.asset(
                             'assets/images/x.png',
@@ -516,7 +516,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       GestureDetector(
                         onTap: () => _showMenu,
                         child: Container(
-                            padding: EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(color: currentTheme.buttonBackgroundColor, shape: BoxShape.circle),
                             child: Icon(Icons.more_horiz, color: currentTheme.buttonColor, size: 20)),
                       ),
