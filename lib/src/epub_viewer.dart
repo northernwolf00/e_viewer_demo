@@ -55,7 +55,8 @@ class EpubViewer extends StatefulWidget {
 
   ///Callback for handling annotation click (Highlight and Underline)
   ///Provides the CFI range and the selection rect (same format as onSelection)
-  final void Function(String cfiRange, Map<String, dynamic>? rect)? onAnnotationClicked;
+  final void Function(String cfiRange, Map<String, dynamic>? rect)?
+      onAnnotationClicked;
 
   /// Callback fired when the user touches down on the EPUB viewer.
   ///
@@ -216,7 +217,13 @@ class _EpubViewerState extends State<EpubViewer> {
   InAppWebViewController? webViewController;
   final GlobalKey webViewKey = GlobalKey();
 
-  Timer? _selectionCheckTimer; // Timer to periodically verify selection still exists
+  Timer?
+      _selectionCheckTimer; // Timer to periodically verify selection still exists
+
+  // iOS swipe detection state (Flutter-level fallback since JS touch events
+  // don't fire properly in WKWebView iframes)
+  Offset? _swipeStartPos;
+  int _swipeStartTime = 0;
 
   @override
   void dispose() {
@@ -514,13 +521,18 @@ class _EpubViewerState extends State<EpubViewer> {
     bool allowScripted = displaySettings.allowScriptedContent;
     String cfi = widget.initialCfi ?? "";
     String? initialXPath = widget.initialXPath;
-    String direction = widget.displaySettings?.defaultDirection.name ?? EpubDefaultDirection.ltr.name;
+    String direction = widget.displaySettings?.defaultDirection.name ??
+        EpubDefaultDirection.ltr.name;
     int fontSize = displaySettings.fontSize;
 
-    bool useCustomSwipe = Platform.isAndroid && !displaySettings.useSnapAnimationAndroid;
+    bool useCustomSwipe = Platform.isIOS ||
+        (Platform.isAndroid && !displaySettings.useSnapAnimationAndroid);
 
-    String? foregroundColor = widget.displaySettings?.theme?.foregroundColor?.toHex();
-    String customCss = widget.displaySettings?.theme?.customCss != null ? Utils.encodeMap(widget.displaySettings!.theme!.customCss!) : "null";
+    String? foregroundColor =
+        widget.displaySettings?.theme?.foregroundColor?.toHex();
+    String customCss = widget.displaySettings?.theme?.customCss != null
+        ? Utils.encodeMap(widget.displaySettings!.theme!.customCss!)
+        : "null";
 
     bool clearSelectionOnPageChange = widget.clearSelectionOnPageChange;
 
@@ -611,7 +623,9 @@ class _EpubViewerState extends State<EpubViewer> {
       }
 
       // Check if selection still exists and re-apply blocking if needed
-      webViewController?.evaluateJavascript(source: 'checkSelectionAndReapplyBlocking()').then((result) {
+      webViewController
+          ?.evaluateJavascript(source: 'checkSelectionAndReapplyBlocking()')
+          .then((result) {
         // If selection no longer exists, stop monitoring
         if (result == 'no-selection') {
           _stopSelectionMonitoring();
@@ -629,9 +643,7 @@ class _EpubViewerState extends State<EpubViewer> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: widget.displaySettings?.theme?.backgroundDecoration,
-      child: InAppWebView(
+    Widget webView = InAppWebView(
         contextMenu: widget.suppressNativeContextMenu
             ? ContextMenu(
                 menuItems: [],
@@ -641,8 +653,10 @@ class _EpubViewerState extends State<EpubViewer> {
               )
             : widget.selectionContextMenu,
         key: webViewKey,
-        initialFile: 'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
-        initialSettings: settings..disableVerticalScroll = widget.displaySettings?.snap ?? false,
+        initialFile:
+            'packages/flutter_epub_viewer/lib/assets/webpage/html/swipe.html',
+        initialSettings: settings
+          ..disableVerticalScroll = widget.displaySettings?.snap ?? false,
         onWebViewCreated: (controller) async {
           webViewController = controller;
           widget.epubController.setWebViewController(controller);
@@ -697,13 +711,49 @@ class _EpubViewerState extends State<EpubViewer> {
           Factory<VerticalDragGestureRecognizer>(
             () => VerticalDragGestureRecognizer(),
           ),
+          Factory<HorizontalDragGestureRecognizer>(
+            () => HorizontalDragGestureRecognizer(),
+          ),
           Factory<LongPressGestureRecognizer>(
             () => LongPressGestureRecognizer(
               duration: const Duration(milliseconds: 30),
             ),
           ),
         },
-      ),
+    );
+
+    // iOS: detect swipes at the Flutter level since JS touch events
+    // don't fire properly in WKWebView iframes
+    if (Platform.isIOS) {
+      webView = Listener(
+        onPointerDown: (event) {
+          _swipeStartPos = event.position;
+          _swipeStartTime = DateTime.now().millisecondsSinceEpoch;
+        },
+        onPointerUp: (event) {
+          if (_swipeStartPos != null) {
+            final duration =
+                DateTime.now().millisecondsSinceEpoch - _swipeStartTime;
+            final dx = event.position.dx - _swipeStartPos!.dx;
+            final dy = (event.position.dy - _swipeStartPos!.dy).abs();
+            // Quick horizontal gesture: < 500ms, > 50px horizontal, < 80px vertical
+            if (duration < 500 && dx.abs() > 50 && dy < 80) {
+              if (dx < 0) {
+                widget.epubController.next();
+              } else {
+                widget.epubController.prev();
+              }
+            }
+            _swipeStartPos = null;
+          }
+        },
+        child: webView,
+      );
+    }
+
+    return Container(
+      decoration: widget.displaySettings?.theme?.backgroundDecoration,
+      child: webView,
     );
   }
 }

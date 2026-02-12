@@ -13,6 +13,7 @@ EpubChapter _$EpubChapterFromJson(Map<String, dynamic> json) => EpubChapter(
   subitems: (json['subitems'] as List<dynamic>)
       .map((e) => EpubChapter.fromJson(e as Map<String, dynamic>))
       .toList(),
+  startPage: (json['startPage'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$EpubChapterToJson(EpubChapter instance) =>
@@ -21,4 +22,5 @@ Map<String, dynamic> _$EpubChapterToJson(EpubChapter instance) =>
       'href': instance.href,
       'id': instance.id,
       'subitems': instance.subitems.map((e) => e.toJson()).toList(),
+      'startPage': instance.startPage,
     };

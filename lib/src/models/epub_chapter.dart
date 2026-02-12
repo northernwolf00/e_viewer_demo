@@ -15,11 +15,15 @@ class EpubChapter {
   /// The subchapters of the chapteri
   final List<EpubChapter> subitems;
 
+  /// The start page number of this chapter (set after locations are generated)
+  int? startPage;
+
   EpubChapter({
     required this.title,
     required this.href,
     required this.id,
     required this.subitems,
+    this.startPage,
   });
   factory EpubChapter.fromJson(Map<String, dynamic> json) =>
       _$EpubChapterFromJson(json);
