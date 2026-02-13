@@ -736,8 +736,8 @@ class _EpubViewerState extends State<EpubViewer> {
                 DateTime.now().millisecondsSinceEpoch - _swipeStartTime;
             final dx = event.position.dx - _swipeStartPos!.dx;
             final dy = (event.position.dy - _swipeStartPos!.dy).abs();
-            // Quick horizontal gesture: < 500ms, > 50px horizontal, < 80px vertical
-            if (duration < 500 && dx.abs() > 50 && dy < 80) {
+            // Quick horizontal gesture: < 500ms, > 50px horizontal, must be more horizontal than vertical
+            if (duration < 500 && dx.abs() > 50 && dy < 80 && dx.abs() > dy * 1.5) {
               if (dx < 0) {
                 widget.epubController.next();
               } else {
